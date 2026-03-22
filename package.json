@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "xps-intelligence-system",
   "private": true,
   "version": "0.1.0",
@@ -11,6 +11,12 @@
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
     "dev:worker": "pnpm --filter worker dev",
+    "docker:up": "docker compose -f infra/docker/compose.local.yml up -d",
+    "docker:down": "docker compose -f infra/docker/compose.local.yml down",
+    "playwright:install": "npx -y -p playwright playwright install --with-deps chromium",
+    "test:e2e": "npx -y -p playwright node tests/scripts/run-e2e.mjs",
+    "benchmark:e2e": "npx -y -p playwright node tests/scripts/run-benchmark.mjs",
+    "smoke:postdeploy": "npx -y -p playwright node tests/scripts/run-smoke.mjs",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
@@ -19,6 +25,7 @@
   "devDependencies": {
     "@types/node": "^22.13.10",
     "eslint": "^9.22.0",
+    "playwright": "^1.58.2",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"
   }

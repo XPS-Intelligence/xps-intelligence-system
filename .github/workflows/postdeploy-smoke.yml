@@ -1,11 +1,35 @@
-﻿name: postdeploy-smoke
+name: postdeploy-smoke
 
 on:
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed site URL to smoke test
+        required: true
+        type: string
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
     steps:
-      - name: Smoke placeholder
-        run: echo 'Postdeploy smoke placeholder ready'
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm playwright:install
+
+      - name: Smoke
+        run: pnpm smoke:postdeploy

@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 43 56% 54%;
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 43 56% 54%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 75%;
+    --sidebar-primary: 43 56% 54%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 43 56% 54%;
+
+    /* XPS Brand tokens */
+    --gold: 43 56% 54%;
+    --gold-light: 43 60% 65%;
+    --gold-dark: 43 50% 40%;
+    --silver: 0 0% 70%;
+    --silver-dark: 0 0% 45%;
+    --surface-elevated: 0 0% 9%;
+    --surface-overlay: 0 0% 6%;
+
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(43, 56%, 54%), hsl(43, 60%, 65%));
+    --gradient-dark: linear-gradient(180deg, hsl(0, 0%, 7%), hsl(0, 0%, 4%));
+    --gradient-card: linear-gradient(145deg, hsl(0, 0%, 9%), hsl(0, 0%, 6%));
+    --gradient-hero: radial-gradient(ellipse at top, hsl(43, 56%, 54%, 0.08), transparent 60%);
+
+    /* Shadows */
+    --shadow-gold: 0 0 30px -10px hsl(43, 56%, 54%, 0.3);
+    --shadow-elevated: 0 8px 32px -8px hsl(0, 0%, 0%, 0.5);
+    --shadow-card: 0 4px 16px -4px hsl(0, 0%, 0%, 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+
+  code, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-gold);
+  }
+
+  .bg-gradient-gold {
+    background-image: var(--gradient-gold);
+  }
+
+  .bg-gradient-card {
+    background-image: var(--gradient-card);
+  }
+
+  .bg-gradient-hero {
+    background-image: var(--gradient-hero);
+  }
+
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .border-gold {
+    border-color: hsl(43, 56%, 54%, 0.3);
+  }
+
+  .border-silver {
+    border-color: hsl(0, 0%, 70%, 0.15);
+  }
+
+  .glass {
+    @apply backdrop-blur-xl;
+    background: hsl(0, 0%, 7%, 0.8);
+  }
+
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(43, 56%, 54%, 0.15), 0 0 60px hsl(43, 56%, 54%, 0.05);
+  }
+}

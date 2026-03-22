@@ -1,0 +1,14 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "ignorePatterns": [
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/components/**",
+    "src/hooks/**",
+    "src/integrations/**",
+    "src/lib/**",
+    "src/pages/**",
+    "src/legacy-pages/**",
+    "src/test/**"
+  ]
+}

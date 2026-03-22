@@ -34,3 +34,16 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Install Playwright browsers
+        run: pnpm playwright:install
+
+      - name: E2E
+        env:
+          XPS_SKIP_STACK_BUILD: "1"
+        run: pnpm test:e2e
+
+      - name: Benchmark
+        env:
+          XPS_SKIP_STACK_BUILD: "1"
+        run: pnpm benchmark:e2e

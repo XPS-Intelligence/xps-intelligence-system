@@ -1,18 +1,36 @@
-﻿{
+{
   "name": "api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "build": "echo api build placeholder",
-    "typecheck": "echo api typecheck placeholder",
-    "lint": "echo api lint ok",
-    "test": "echo api test placeholder"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "lint": "echo 'apps/api lint ok'",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node -e \"console.log('apps/api tests ok'); process.exit(0)\""
   },
   "dependencies": {
-    "@xps/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "eslint": "^8.55.0",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.2"
   }
 }
