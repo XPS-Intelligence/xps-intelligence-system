@@ -6,4 +6,5 @@ coverage/
 .env.local
 .env.*.local
 pnpm-lock.yaml
+*.tsbuildinfo
 *.log

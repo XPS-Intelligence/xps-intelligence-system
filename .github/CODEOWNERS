@@ -1,0 +1,9 @@
+* @XPS-Intelligence
+
+.github/ @XPS-Intelligence
+apps/api/ @XPS-Intelligence
+apps/web/ @XPS-Intelligence
+apps/worker/ @XPS-Intelligence
+docs/ @XPS-Intelligence
+packages/ @XPS-Intelligence
+tests/ @XPS-Intelligence
