@@ -1,15 +1,21 @@
 ﻿{
-  ""name"": ""xps-intelligence-system"",
-  ""private"": true,
-  ""version"": ""0.1.0"",
-  ""workspaces"": [
-    ""apps/*"",
-    ""packages/*""
-  ],
-  ""scripts"": {
-    ""typecheck"": ""echo typecheck placeholder"",
-    ""lint"": ""echo lint placeholder"",
-    ""build"": ""echo build placeholder"",
-    ""test"": ""echo test placeholder""
+  "name": "xps-intelligence-system",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.6.1",
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:worker": "pnpm --filter worker dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
   }
 }
