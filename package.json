@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@10.6.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",

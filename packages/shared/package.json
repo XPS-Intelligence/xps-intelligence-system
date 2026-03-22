@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "node -e ""console.log('shared lint ok')""",
+    "lint": "echo shared lint ok",
     "test": "vitest run"
   }
 }

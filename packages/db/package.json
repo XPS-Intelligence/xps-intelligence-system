@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "node -e ""console.log('db lint ok')""",
-    "test": "node -e ""console.log('db test placeholder')"""
+    "lint": "echo db lint ok",
+    "test": "echo db test placeholder"
   }
 }

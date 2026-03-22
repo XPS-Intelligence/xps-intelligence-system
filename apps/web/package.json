@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node -e ""console.log('web dev placeholder - Next.js to be added in UI migration round')""",
-    "build": "node -e ""console.log('web build placeholder')""",
-    "typecheck": "node -e ""console.log('web typecheck placeholder')""",
-    "lint": "node -e ""console.log('web lint ok')""",
-    "test": "node -e ""console.log('web test placeholder')"""
+    "dev": "echo web dev placeholder - Next.js migration round pending",
+    "build": "echo web build placeholder",
+    "typecheck": "echo web typecheck placeholder",
+    "lint": "echo web lint ok",
+    "test": "echo web test placeholder"
   }
 }
