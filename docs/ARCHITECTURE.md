@@ -1,7 +1,17 @@
 ﻿# Architecture
 
-## Purpose
-Describe the role of this repository in the XPS ecosystem.
+## Runtime structure
+- apps/web = live frontend
+- apps/api = live backend API
+- apps/worker = background jobs
+- packages/shared = contracts and shared logic
+- packages/db = schema and migrations
+- packages/adapters = source adapters
+- packages/prompts = prompt registry
+- packages/agents = agent logic
 
-## Next step
-Replace this with the real architecture for this repo.
+## Runtime planes
+- Railway = runtime
+- Supabase/Postgres = data
+- Redis = queue/cache
+- HubSpot = CRM action layer

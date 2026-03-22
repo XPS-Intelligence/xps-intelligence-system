@@ -1,0 +1,11 @@
+﻿name: postdeploy-smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke placeholder
+        run: echo 'Postdeploy smoke placeholder ready'

@@ -1,0 +1,15 @@
+﻿{
+  ""name"": ""xps-intelligence-system"",
+  ""private"": true,
+  ""version"": ""0.1.0"",
+  ""workspaces"": [
+    ""apps/*"",
+    ""packages/*""
+  ],
+  ""scripts"": {
+    ""typecheck"": ""echo typecheck placeholder"",
+    ""lint"": ""echo lint placeholder"",
+    ""build"": ""echo build placeholder"",
+    ""test"": ""echo test placeholder""
+  }
+}
