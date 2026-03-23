@@ -1,0 +1,14 @@
+[
+  { "city": "Miami", "state": "FL", "industry": "epoxy flooring contractor", "keyword": "decorative concrete", "max_results": 10 },
+  { "city": "Fort Lauderdale", "state": "FL", "industry": "epoxy flooring contractor", "keyword": "garage floor coating", "max_results": 10 },
+  { "city": "West Palm Beach", "state": "FL", "industry": "concrete polishing contractor", "keyword": "industrial flooring", "max_results": 10 },
+  { "city": "Orlando", "state": "FL", "industry": "epoxy flooring contractor", "keyword": "commercial floor coating", "max_results": 10 },
+  { "city": "Tampa", "state": "FL", "industry": "resinous flooring contractor", "keyword": "warehouse floor coating", "max_results": 10 },
+  { "city": "St. Petersburg", "state": "FL", "industry": "concrete polishing contractor", "keyword": "decorative concrete", "max_results": 10 },
+  { "city": "Jacksonville", "state": "FL", "industry": "epoxy flooring contractor", "keyword": "concrete resurfacing", "max_results": 10 },
+  { "city": "Port St. Lucie", "state": "FL", "industry": "epoxy flooring contractor", "keyword": "commercial concrete polishing", "max_results": 10 },
+  { "city": "Naples", "state": "FL", "industry": "garage floor coating", "keyword": "epoxy flooring contractor", "max_results": 10 },
+  { "city": "Sarasota", "state": "FL", "industry": "concrete coating contractor", "keyword": "residential epoxy", "max_results": 10 },
+  { "city": "Atlanta", "state": "GA", "industry": "epoxy flooring contractor", "keyword": "decorative concrete", "max_results": 10 },
+  { "city": "Charlotte", "state": "NC", "industry": "epoxy flooring contractor", "keyword": "concrete polishing", "max_results": 10 }
+]
