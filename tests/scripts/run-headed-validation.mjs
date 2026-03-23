@@ -49,7 +49,7 @@ try {
   await queueSearch(page, { city: "Miami", state: "FL", industry: "epoxy flooring contractor", keyword: "decorative concrete" });
   await page.reload({ waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "06-scraper-after.png"), fullPage: true });
-  assert.match(await page.textContent("body"), /Manual search|Direct crawl|Personal scraper presets/i);
+  assert.match(await page.textContent("body"), /Preset-driven manual search|Browser-assisted direct crawl|Personal scraper presets|Scraper copilot/i);
 
   await page.goto("/ai-assistant", { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "07-ai-assistant.png"), fullPage: true });
@@ -57,7 +57,7 @@ try {
 
   await page.goto("/admin", { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "08-admin.png"), fullPage: true });
-  assert.match(await page.textContent("body"), /Admin editor|Operator manifest|Live preview/i);
+  assert.match(await page.textContent("body"), /Center editor|Operator manifest|Operator quick launch|Live preview/i);
 
   await context.tracing.stop({ path: tracePath });
   console.log(

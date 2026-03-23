@@ -60,6 +60,7 @@ export function AdminControlPlane() {
   const [saving, setSaving] = useState(false);
   const [previewPath, setPreviewPath] = useState("/dashboard");
   const [previewKey, setPreviewKey] = useState(0);
+  const [previewViewport, setPreviewViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
   useEffect(() => {
     async function loadFiles() {
@@ -104,6 +105,27 @@ export function AdminControlPlane() {
   }, [selectedPath]);
 
   const previewUrl = useMemo(() => previewPath || "/dashboard", [previewPath]);
+  const launchRoutes = useMemo(() => {
+    const preferredOrder = ["/admin", "/scraper", "/dashboard", "/leads", "/ai-assistant", "/settings"];
+    const byRoute = new Map((manifest?.web_routes ?? []).map((item) => [item.route, item]));
+    const preferred = preferredOrder
+      .map((route) => byRoute.get(route))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    const overflow = (manifest?.web_routes ?? []).filter((item) => !preferredOrder.includes(item.route)).slice(0, 4);
+    return [...preferred, ...overflow].slice(0, 8);
+  }, [manifest?.web_routes]);
+  const previewFrameClassName = useMemo(() => {
+    if (previewViewport === "mobile") return "mx-auto max-w-sm";
+    if (previewViewport === "tablet") return "mx-auto max-w-4xl";
+    return "w-full";
+  }, [previewViewport]);
+
+  function openRoute(route: { route: string; file: string }) {
+    setPreviewPath(route.route);
+    setPreviewKey((value) => value + 1);
+    setSelectedPath(route.file);
+    setStatus(`Opened ${route.route}`);
+  }
 
   async function saveFile() {
     if (!selectedPath) return;
@@ -194,6 +216,44 @@ export function AdminControlPlane() {
         </section>
 
         <section className="rounded-[2rem] border border-white/10 bg-black/25 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <TerminalSquare className="h-4 w-4 text-gold" />
+            Operator quick launch
+          </div>
+          <div className="mt-2 text-sm leading-6 text-white/55">
+            Launch a live route, open the backing source file, then validate the change in the same cockpit.
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {launchRoutes.map((route) => (
+              <button
+                key={`${route.route}-${route.file}`}
+                type="button"
+                onClick={() => openRoute(route)}
+                className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-gold/30 hover:bg-white/5"
+              >
+                <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Route</div>
+                <div className="mt-2 text-base font-semibold text-white">{route.route}</div>
+                <div className="mt-2 text-xs leading-5 text-white/45">{route.file}</div>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 grid gap-4 xl:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Selected file</div>
+              <div className="mt-2 text-sm font-semibold text-white">{selectedPath ?? "No file selected"}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Preview route</div>
+              <div className="mt-2 text-sm font-semibold text-white">{previewUrl}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Operator loop</div>
+              <div className="mt-2 text-sm leading-6 text-white/60">Launch route, edit source, save, refresh preview, then validate the workspace in browser tests.</div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[2rem] border border-white/10 bg-black/25 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -231,7 +291,7 @@ export function AdminControlPlane() {
               <Eye className="h-4 w-4 text-gold" />
               Live preview
             </div>
-            <div className="flex w-full max-w-xl gap-2">
+            <div className="flex w-full max-w-xl flex-wrap gap-2">
               <input
                 value={previewPath}
                 onChange={(event) => setPreviewPath(event.target.value)}
@@ -245,14 +305,32 @@ export function AdminControlPlane() {
                 <RefreshCcw className="h-4 w-4" />
                 Refresh
               </button>
+              <div className="flex gap-2">
+                {(["desktop", "tablet", "mobile"] as const).map((viewport) => (
+                  <button
+                    key={viewport}
+                    type="button"
+                    onClick={() => setPreviewViewport(viewport)}
+                    className={`rounded-2xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                      previewViewport === viewport
+                        ? "border-gold/40 bg-gold/12 text-gold-light"
+                        : "border-white/10 bg-white/5 text-white/75 hover:border-gold/30"
+                    }`}
+                  >
+                    {viewport}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-neutral-950">
-            <iframe key={previewKey} title="Admin preview" src={previewUrl} className="h-[420px] w-full bg-white" />
+            <div className={previewFrameClassName}>
+              <iframe key={previewKey} title="Admin preview" src={previewUrl} className="h-[420px] w-full bg-white" />
+            </div>
           </div>
           <div className="mt-3 flex items-center gap-2 text-sm text-white/55">
             <TerminalSquare className="h-4 w-4 text-gold" />
-            Donor-aligned operator cockpit: manifest, editor, save path, and refreshable live preview now sit inside the admin plane.
+            Donor-aligned operator cockpit: route launch, center editor, save path, and refreshable live preview now sit inside the admin plane.
           </div>
         </section>
       </div>

@@ -67,6 +67,19 @@ type ScrapeJob = {
   created_at: string;
 };
 
+type ScraperPreset = {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  industry: string;
+  keyword: string;
+  persona: string;
+  brief: string;
+  recommendedMode: "auto" | "steel" | "firecrawl";
+  browserLane: string;
+};
+
 type AssistantBriefing = {
   role: User["role"];
   autonomy_mode: "minimal" | "hybrid" | "full";
@@ -145,10 +158,58 @@ const routeRoles: Record<string, User["role"][]> = {
   "/owner": ["owner", "admin"],
 };
 
-const scraperPresets = [
-  { name: "Miami epoxy", city: "Miami", state: "FL", industry: "epoxy flooring contractor", keyword: "decorative concrete" },
-  { name: "Tampa resin", city: "Tampa", state: "FL", industry: "resinous floor contractor", keyword: "polished concrete" },
-  { name: "Orlando coatings", city: "Orlando", state: "FL", industry: "industrial coatings", keyword: "concrete polishing" },
+const defaultSearchForm = {
+  city: "Miami",
+  state: "FL",
+  industry: "epoxy flooring contractor",
+  keyword: "decorative concrete",
+  max_results: "5",
+};
+
+const defaultCrawlForm = {
+  url: "https://www.sundek.com/",
+  company_name: "",
+  query: "",
+  mode: "auto",
+};
+
+const scraperPresets: ScraperPreset[] = [
+  {
+    id: "miami-epoxy",
+    name: "Miami epoxy",
+    city: "Miami",
+    state: "FL",
+    industry: "epoxy flooring contractor",
+    keyword: "decorative concrete",
+    persona: "Territory opener",
+    brief: "Good first pass for South Florida commercial resurfacing targets and showroom-led operators.",
+    recommendedMode: "auto",
+    browserLane: "Playwright review after queue",
+  },
+  {
+    id: "tampa-resin",
+    name: "Tampa resin",
+    city: "Tampa",
+    state: "FL",
+    industry: "resinous floor contractor",
+    keyword: "polished concrete",
+    persona: "Industrial hunter",
+    brief: "Targets industrial and warehouse coating providers with stronger qualification potential.",
+    recommendedMode: "steel",
+    browserLane: "Browser validation for facility fit",
+  },
+  {
+    id: "orlando-coatings",
+    name: "Orlando coatings",
+    city: "Orlando",
+    state: "FL",
+    industry: "industrial coatings",
+    keyword: "concrete polishing",
+    persona: "Mixed commercial",
+    brief: "Balanced preset for mixed commercial coatings, showrooms, and service-heavy teams.",
+    recommendedMode: "firecrawl",
+    browserLane: "Firecrawl first, browser second",
+  },
 ];
 
 function filterSystemNav(role: User["role"] | null) {
@@ -239,23 +300,61 @@ export function LiveWorkspaceView({
   const [briefing, setBriefing] = useState<AssistantBriefing | null>(null);
   const [intelligenceSummary, setIntelligenceSummary] = useState<IntelligenceSummary | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [searchForm, setSearchForm] = useState({
-    city: "Miami",
-    state: "FL",
-    industry: "epoxy flooring contractor",
-    keyword: "decorative concrete",
-    max_results: "5",
-  });
-  const [crawlForm, setCrawlForm] = useState({
-    url: "https://www.sundek.com/",
-    company_name: "",
-    query: "",
-    mode: "auto",
-  });
+  const [selectedPresetId, setSelectedPresetId] = useState<string>(scraperPresets[0]?.id ?? "");
+  const [searchForm, setSearchForm] = useState(defaultSearchForm);
+  const [crawlForm, setCrawlForm] = useState(defaultCrawlForm);
 
   const filteredSystemNav = useMemo(() => filterSystemNav(currentUser?.role ?? null), [currentUser?.role]);
   const workspaceTemplate = route.template ?? "team-member";
   const workspaceCategory = route.category ?? "core";
+  const activeScraperPreset = useMemo(
+    () => scraperPresets.find((preset) => preset.id === selectedPresetId) ?? null,
+    [selectedPresetId],
+  );
+  const routeAssistantPresence = useMemo(() => {
+    if (pathname === "/scraper") {
+      return {
+        title: "Scraper copilot",
+        summary:
+          "The assistant stays attached to the search package, browser lane, and output candidates so operators can move from prospecting to validation without leaving the workspace.",
+        actions: [
+          activeScraperPreset
+            ? `Apply ${activeScraperPreset.name} and review the generated search package before queueing.`
+            : "Select a preset or switch to custom territory inputs before queueing work.",
+          "Use the browser lane after queueing to verify fit, site quality, and territory relevance.",
+          "Promote only scored and validated candidates into HubSpot once the recommendation is clear.",
+        ],
+      };
+    }
+
+    if (pathname === "/admin") {
+      return {
+        title: "Operator copilot",
+        summary:
+          "The admin rail should help you move between route launch, file editing, preview validation, and assistant guidance without context switching out of the cockpit.",
+        actions: [
+          "Open a live route from the manifest, then jump directly into its source file from the center pane.",
+          "Preview the active route after each save and keep validation scoped to the workspace you are changing.",
+          "Use the control plane to edit only governed files, then hand the result back to the runtime shell for verification.",
+        ],
+      };
+    }
+
+    return {
+      title: "AI partner",
+      summary:
+        "This rail carries the current workspace context, role, and autonomy mode so the assistant remains attached to the exact operating surface the user is in.",
+      actions: [
+        "Review the active workspace context before triggering recommendations or outbound actions.",
+        "Use proactive cards to move between lead review, intelligence, and CRM promotion.",
+        "Keep autonomy mode aligned with the user's role and current task risk.",
+      ],
+    };
+  }, [activeScraperPreset, pathname]);
+  const scraperSearchPackage = useMemo(
+    () => `${searchForm.city}, ${searchForm.state} · ${searchForm.industry} · ${searchForm.keyword}`,
+    [searchForm.city, searchForm.industry, searchForm.keyword, searchForm.state],
+  );
 
   const refreshData = useCallback(async () => {
     setLoading(true);
@@ -348,6 +447,7 @@ export function LiveWorkspaceView({
   }
 
   function applyScraperPreset(preset: (typeof scraperPresets)[number]) {
+    setSelectedPresetId(preset.id);
     setSearchForm((prev) => ({
       ...prev,
       city: preset.city,
@@ -355,6 +455,17 @@ export function LiveWorkspaceView({
       industry: preset.industry,
       keyword: preset.keyword,
     }));
+    setCrawlForm((prev) => ({
+      ...prev,
+      query: `${preset.city} ${preset.state} ${preset.industry} ${preset.keyword}`,
+      mode: preset.recommendedMode,
+    }));
+  }
+
+  function resetScraperWorkspace() {
+    setSelectedPresetId("");
+    setSearchForm(defaultSearchForm);
+    setCrawlForm(defaultCrawlForm);
   }
 
   const metrics =
@@ -596,21 +707,77 @@ export function LiveWorkspaceView({
                 {pathname === "/scraper" ? (
                   <div className="mt-4 grid gap-4 xl:grid-cols-2">
                     <form onSubmit={submitSearch} className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                      <div className="mb-4 text-sm font-semibold text-white">Manual search</div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-white">Preset-driven manual search</div>
+                          <div className="mt-1 text-sm leading-6 text-white/60">
+                            Queue a governed search package for a user-owned territory, then let the assistant carry the context into review and promotion.
+                          </div>
+                        </div>
+                        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-white/55">
+                          {activeScraperPreset ? activeScraperPreset.persona : "custom"}
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {scraperPresets.map((preset) => {
+                          const active = selectedPresetId === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => applyScraperPreset(preset)}
+                              className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                                active
+                                  ? "border-gold/40 bg-gold/12 text-gold-light"
+                                  : "border-white/10 bg-white/5 text-white/70 hover:border-gold/30 hover:text-white"
+                              }`}
+                            >
+                              {preset.name}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <div className="grid gap-3">
                         <InputField label="City" value={searchForm.city} onChange={(value) => setSearchForm((prev) => ({ ...prev, city: value }))} />
                         <InputField label="State" value={searchForm.state} onChange={(value) => setSearchForm((prev) => ({ ...prev, state: value }))} />
                         <InputField label="Industry" value={searchForm.industry} onChange={(value) => setSearchForm((prev) => ({ ...prev, industry: value }))} />
                         <InputField label="Keyword" value={searchForm.keyword} onChange={(value) => setSearchForm((prev) => ({ ...prev, keyword: value }))} />
                         <InputField label="Max results" value={searchForm.max_results} onChange={(value) => setSearchForm((prev) => ({ ...prev, max_results: value }))} type="number" />
+                      </div>
+                      <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+                        <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Search package</div>
+                        <div className="mt-2 text-sm font-semibold text-white">{scraperSearchPackage}</div>
+                        <div className="mt-2 text-sm leading-6 text-white/60">
+                          {activeScraperPreset?.brief ??
+                            "Custom package: use this when you need a manual territory or keyword combination outside the preset catalog."}
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
                         <button type="submit" disabled={submitting} className="rounded-2xl bg-gradient-gold px-4 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70">
-                          Queue search
+                          Queue manual search
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetScraperWorkspace}
+                          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/80 transition hover:border-gold/30"
+                        >
+                          Reset workspace
                         </button>
                       </div>
                     </form>
 
                     <form onSubmit={submitCrawl} className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                      <div className="mb-4 text-sm font-semibold text-white">Direct crawl</div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-white">Browser-assisted direct crawl</div>
+                          <div className="mt-1 text-sm leading-6 text-white/60">
+                            Use this lane when you already know the company or URL and want a governed crawl job paired with browser review.
+                          </div>
+                        </div>
+                        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-white/55">
+                          {activeScraperPreset?.browserLane ?? "manual review"}
+                        </div>
+                      </div>
                       <div className="grid gap-3">
                         <InputField label="URL" value={crawlForm.url} onChange={(value) => setCrawlForm((prev) => ({ ...prev, url: value }))} />
                         <InputField label="Company name" value={crawlForm.company_name} onChange={(value) => setCrawlForm((prev) => ({ ...prev, company_name: value }))} />
@@ -627,8 +794,31 @@ export function LiveWorkspaceView({
                             <option value="firecrawl">firecrawl</option>
                           </select>
                         </div>
+                      </div>
+                      <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+                        <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Dispatch summary</div>
+                        <div className="mt-2 text-sm font-semibold text-white">
+                          {crawlForm.company_name || "Unassigned company"} · {crawlForm.mode}
+                        </div>
+                        <div className="mt-2 text-sm leading-6 text-white/60">
+                          {crawlForm.query || "No browser query attached yet. Apply a preset or write a guided query to improve review quality."}
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
                         <button type="submit" disabled={submitting} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70">
-                          Queue crawl
+                          Queue direct crawl
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCrawlForm((prev) => ({
+                              ...prev,
+                              query: `${searchForm.city} ${searchForm.state} ${searchForm.industry} ${searchForm.keyword}`,
+                            }))
+                          }
+                          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/80 transition hover:border-gold/30"
+                        >
+                          Copy search package
                         </button>
                       </div>
                     </form>
@@ -739,9 +929,22 @@ export function LiveWorkspaceView({
                 ) : (
                   <div className="mt-4 space-y-3">
                     {pathname === "/admin" ? (
-                      <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/70">
-                        Admin quick actions are moving into the always-on operator rail so the control plane stays consistent with every other workspace.
-                      </div>
+                      <>
+                        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                          <div className="text-sm font-semibold text-white">Operator handoff</div>
+                          <div className="mt-2 text-sm leading-6 text-white/65">
+                            Use the center pane to launch a route, open its source file, save, and refresh preview without leaving the control plane.
+                          </div>
+                        </div>
+                        <Link href="/scraper" className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/80 transition hover:border-gold/40">
+                          Open scraper workspace
+                          <ArrowRight className="h-4 w-4 text-white/40" />
+                        </Link>
+                        <Link href="/leads" className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/80 transition hover:border-gold/40">
+                          Review lead candidates
+                          <ArrowRight className="h-4 w-4 text-white/40" />
+                        </Link>
+                      </>
                     ) : null}
                     <Link href="/dashboard" className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/80 transition hover:border-gold/40">
                       Return to dashboard
@@ -783,15 +986,20 @@ export function LiveWorkspaceView({
                 </section>
 
                 <section className="rounded-[2rem] border border-white/10 bg-card/75 p-5">
-                  <div className="text-sm font-semibold text-white">AI partner</div>
+                  <div className="text-sm font-semibold text-white">{routeAssistantPresence.title}</div>
                   <div className="mt-3 rounded-2xl border border-gold/20 bg-gold/10 p-4">
                     <div className="text-[11px] uppercase tracking-[0.22em] text-gold-light">Autonomy mode</div>
                     <div className="mt-2 text-lg font-black text-white">{briefing?.autonomy_mode ?? "hybrid"}</div>
                     <div className="mt-2 text-sm leading-6 text-white/65">
-                      Same shell, role-tailored tools, and proactive guidance live in this rail once the provider routing and blueprint catalog are fully connected.
+                      {routeAssistantPresence.summary}
                     </div>
                   </div>
                   <div className="mt-3 space-y-3">
+                    {routeAssistantPresence.actions.map((action) => (
+                      <div key={action} className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/60">
+                        {action}
+                      </div>
+                    ))}
                     {(briefing?.cards ?? []).slice(0, 2).map((card) => (
                       <div key={card.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
                         <div className="text-sm font-semibold text-white">{card.title}</div>
@@ -803,7 +1011,7 @@ export function LiveWorkspaceView({
                     ) : null}
                   </div>
                   <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/60">
-                    This rail now follows every workspace. The next layer is full page-aware chat, action execution, and persistent conversational threads on top of the live briefing context.
+                    This rail now follows every workspace with route-aware context. The next layer is persistent conversation threads, settings, and live execution against the same workspace state.
                   </div>
                 </section>
 
@@ -813,23 +1021,33 @@ export function LiveWorkspaceView({
                     <div className="mt-3 space-y-3">
                       {scraperPresets.map((preset) => (
                         <button
-                          key={preset.name}
+                          key={preset.id}
                           type="button"
                           onClick={() => applyScraperPreset(preset)}
-                          className="block w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-left transition hover:border-gold/30"
+                          className={`block w-full rounded-2xl border p-4 text-left transition ${
+                            selectedPresetId === preset.id
+                              ? "border-gold/35 bg-gold/10"
+                              : "border-white/10 bg-black/25 hover:border-gold/30"
+                          }`}
                         >
-                          <div className="text-sm font-semibold text-white">{preset.name}</div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="text-sm font-semibold text-white">{preset.name}</div>
+                            <div className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/50">
+                              {preset.persona}
+                            </div>
+                          </div>
                           <div className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">
                             {preset.city}, {preset.state}
                           </div>
                           <div className="mt-2 text-sm leading-6 text-white/60">
                             {preset.industry} · {preset.keyword}
                           </div>
+                          <div className="mt-2 text-sm leading-6 text-white/45">{preset.brief}</div>
                         </button>
                       ))}
                     </div>
                     <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/60">
-                      Next step: bind this panel to per-user scraper profiles, Playwright browser search, and admin-managed source permissions.
+                      Active workspace: {activeScraperPreset?.name ?? "custom search"} · {activeScraperPreset?.browserLane ?? "manual browser lane"}.
                     </div>
                   </section>
                 ) : null}
