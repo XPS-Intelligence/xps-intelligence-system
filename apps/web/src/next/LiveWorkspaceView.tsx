@@ -85,6 +85,32 @@ type AssistantBriefing = {
   }>;
 };
 
+type IntelligenceSummary = {
+  generated_at: string;
+  workspace_root: string | null;
+  status: "available" | "partial" | "missing";
+  repositories: {
+    intel: {
+      status: "available" | "partial" | "missing";
+      root: string | null;
+      totals: { files: number; available_files: number; headings: number; bullets: number };
+    };
+    distallation: {
+      status: "available" | "partial" | "missing";
+      root: string | null;
+      totals: { files: number; available_files: number; headings: number; bullets: number };
+    };
+  };
+  summary: {
+    taxonomy_files: number;
+    seed_files: number;
+    benchmark_files: number;
+    distillation_files: number;
+    validation_files: number;
+    reflection_files: number;
+  };
+};
+
 const primaryNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: Users },
@@ -211,6 +237,7 @@ export function LiveWorkspaceView({
   const [scrapeJobs, setScrapeJobs] = useState<ScrapeJob[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [briefing, setBriefing] = useState<AssistantBriefing | null>(null);
+  const [intelligenceSummary, setIntelligenceSummary] = useState<IntelligenceSummary | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [searchForm, setSearchForm] = useState({
     city: "Miami",
@@ -234,23 +261,23 @@ export function LiveWorkspaceView({
     setLoading(true);
     setRouteError(null);
     try {
-      const me = await api.get<{ user: User }>("/auth/me");
+      const [me, analyticsSummary, candidateResponse, assistantBriefing, intelligence] = await Promise.all([
+        api.get<{ user: User }>("/auth/me"),
+        api.get<AnalyticsSummary>("/analytics/summary"),
+        api.get<{ items: LeadCandidate[] }>("/lead-candidates"),
+        api.get<AssistantBriefing>("/assistants/briefing"),
+        api.get<IntelligenceSummary>("/intelligence/summary"),
+      ]);
+
       setCurrentUser(me.user);
       localStorage.setItem("xps_user", JSON.stringify(me.user));
-
-      if (pathname === "/dashboard" || pathname === "/analytics") {
-        setAnalytics(await api.get<AnalyticsSummary>("/analytics/summary"));
-      }
-      if (pathname === "/dashboard" || pathname === "/leads" || pathname === "/scraper") {
-        const response = await api.get<{ items: LeadCandidate[] }>("/lead-candidates");
-        setLeadCandidates(response.items);
-      }
+      setAnalytics(analyticsSummary);
+      setLeadCandidates(candidateResponse.items);
+      setBriefing(assistantBriefing);
+      setIntelligenceSummary(intelligence);
       if (pathname === "/scraper") {
         const response = await api.get<{ items: ScrapeJob[] }>("/scrape/jobs");
         setScrapeJobs(response.items);
-      }
-      if (["/ai-assistant", "/manager", "/owner", "/admin"].includes(pathname)) {
-        setBriefing(await api.get<AssistantBriefing>("/assistants/briefing"));
       }
     } catch (error) {
       setRouteError((error as Error).message);
@@ -345,13 +372,48 @@ export function LiveWorkspaceView({
             { label: "Qualified", value: `${leadCandidates.length ? Math.round((leadCandidates.filter((candidate) => candidate.score >= 60).length / leadCandidates.length) * 100) : 0}%` },
             { label: "Average score", value: String(leadCandidates.length ? Math.round(leadCandidates.reduce((sum, candidate) => sum + candidate.score, 0) / leadCandidates.length) : 0) },
           ]
-        : pathname === "/scraper"
+      : pathname === "/scraper"
           ? [
               { label: "Jobs", value: String(scrapeJobs.length) },
               { label: "Succeeded", value: `${scrapeJobs.length ? Math.round((scrapeJobs.filter((job) => job.status === "completed").length / scrapeJobs.length) * 100) : 0}%` },
               { label: "Queued", value: String(scrapeJobs.filter((job) => job.status === "queued" || job.status === "running").length) },
               { label: "Output", value: String(leadCandidates.length) },
             ]
+          : pathname === "/crm"
+            ? [
+                { label: "Activated", value: String(leadCandidates.filter((candidate) => candidate.candidate_status === "activated").length) },
+                { label: "Ready", value: String(leadCandidates.filter((candidate) => candidate.score >= 60 && candidate.candidate_status !== "activated").length) },
+                { label: "Recommended", value: String(leadCandidates.filter((candidate) => candidate.recommendation_type).length) },
+                { label: "Autonomy", value: briefing?.autonomy_mode ?? "hybrid" },
+              ]
+            : ["/research", "/knowledge", "/competition", "/connectors", "/intelligence"].includes(pathname)
+              ? [
+                  { label: "Taxonomy", value: String(intelligenceSummary?.summary.taxonomy_files ?? 0) },
+                  { label: "Seeds", value: String(intelligenceSummary?.summary.seed_files ?? 0) },
+                  { label: "Benchmarks", value: String(intelligenceSummary?.summary.benchmark_files ?? 0) },
+                  { label: "Validation", value: String(intelligenceSummary?.summary.validation_files ?? 0) },
+                ]
+              : pathname === "/outreach"
+                ? [
+                    { label: "Hot leads", value: String(leadCandidates.filter((candidate) => candidate.score >= 75).length) },
+                    { label: "Recommended", value: String(leadCandidates.filter((candidate) => candidate.recommendation_type).length) },
+                    { label: "Activated", value: String(leadCandidates.filter((candidate) => candidate.candidate_status === "activated").length) },
+                    { label: "Mode", value: briefing?.autonomy_mode ?? "hybrid" },
+                  ]
+                : pathname === "/proposals"
+                  ? [
+                      { label: "Pipeline", value: `$${(analytics?.pipeline_value ?? 0).toLocaleString()}` },
+                      { label: "Open", value: String(analytics?.proposals_sent ?? 0) },
+                      { label: "Close rate", value: `${analytics?.close_rate ?? 0}%` },
+                      { label: "Scored", value: String(leadCandidates.filter((candidate) => candidate.score > 0).length) },
+                    ]
+                  : pathname === "/settings"
+                    ? [
+                        { label: "Role", value: currentUser?.role ?? "guest" },
+                        { label: "Mode", value: briefing?.autonomy_mode ?? "hybrid" },
+                        { label: "Intel", value: intelligenceSummary?.status ?? "unknown" },
+                        { label: "Runtime", value: "Live" },
+                      ]
           : [
               { label: "Status", value: "Ready" },
               { label: "Route", value: pathname },
@@ -573,6 +635,47 @@ export function LiveWorkspaceView({
                   </div>
                 ) : null}
 
+                {!["/dashboard", "/leads", "/scraper", "/ai-assistant", "/manager", "/owner", "/admin"].includes(pathname) ? (
+                  <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                      <div className="text-sm font-semibold text-white">Live workspace context</div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {[
+                          ["Scored candidates", String(leadCandidates.filter((candidate) => candidate.score > 0).length)],
+                          ["Recommended", String(leadCandidates.filter((candidate) => candidate.recommendation_type).length)],
+                          ["Pipeline value", `$${(analytics?.pipeline_value ?? 0).toLocaleString()}`],
+                          ["Intel status", intelligenceSummary?.status ?? "unknown"],
+                        ].map(([label, value]) => (
+                          <div key={label} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                            <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">{label}</div>
+                            <div className="mt-2 text-lg font-black text-white">{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                      <div className="text-sm font-semibold text-white">Assistant focus</div>
+                      <div className="mt-4 space-y-3">
+                        {(briefing?.cards ?? []).slice(0, 3).map((card) => (
+                          <div key={card.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="text-sm font-semibold text-white">{card.title}</div>
+                                <div className="mt-2 text-sm leading-6 text-white/65">{card.summary}</div>
+                              </div>
+                              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-gold-light">
+                                {card.priority}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {!briefing?.cards.length ? <EmptyState text="Assistant context will populate here as live briefing data expands." /> : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 {!["/dashboard", "/leads", "/scraper"].includes(pathname) ? (
                   <div className="mt-4 space-y-3">
                     {route.notes.map((note) => (
@@ -616,7 +719,7 @@ export function LiveWorkspaceView({
                     ))}
                     {!analytics?.recent_activities.length ? <EmptyState text="Activity appears once recommendations are generated." /> : null}
                   </div>
-                ) : ["/ai-assistant", "/manager", "/owner"].includes(pathname) ? (
+                ) : ["/ai-assistant", "/manager", "/owner", "/crm", "/research", "/outreach", "/proposals", "/knowledge", "/competition", "/connectors", "/intelligence", "/settings", "/sales-staff", "/sales-flow"].includes(pathname) ? (
                   <div className="mt-4 space-y-3">
                     {(briefing?.top_candidates ?? []).map((candidate) => (
                       <div key={`${candidate.company_name}-${candidate.score}`} className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
@@ -698,6 +801,9 @@ export function LiveWorkspaceView({
                     {!briefing?.cards.length ? (
                       <EmptyState text="Proactive assistant cards appear here as the live assistant rail fills out." />
                     ) : null}
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/60">
+                    This rail now follows every workspace. The next layer is full page-aware chat, action execution, and persistent conversational threads on top of the live briefing context.
                   </div>
                 </section>
 
