@@ -1,7 +1,5 @@
 FROM node:20-bookworm-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN npm install -g pnpm@10.6.1
 WORKDIR /app
 
 FROM base AS deps
@@ -10,7 +8,7 @@ COPY apps/web/package.json apps/web/package.json
 RUN pnpm install --frozen-lockfile --filter web...
 
 FROM base AS build
-ARG NEXT_PUBLIC_API_URL=http://localhost:4000/api
+ARG NEXT_PUBLIC_API_URL=/api
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
@@ -21,9 +19,7 @@ COPY apps/web ./apps/web
 RUN pnpm --filter web build
 
 FROM node:20-bookworm-slim AS runtime
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN npm install -g pnpm@10.6.1
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
