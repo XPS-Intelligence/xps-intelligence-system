@@ -12,7 +12,13 @@ const server = app.listen(env.PORT, env.HOST, () => {
   });
 });
 
+let shuttingDown = false;
+
 function shutdown(signal: string) {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
   log("info", "Shutting down API", { signal });
   server.close(() => {
     log("info", "API server closed");
@@ -22,3 +28,12 @@ function shutdown(signal: string) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("unhandledRejection", (reason) => {
+  const error = reason instanceof Error ? { message: reason.message, stack: reason.stack } : { reason: String(reason) };
+  log("error", "Unhandled promise rejection", error);
+  shutdown("unhandledRejection");
+});
+process.on("uncaughtException", (error) => {
+  log("error", "Uncaught exception", { message: error.message, stack: error.stack });
+  shutdown("uncaughtException");
+});
