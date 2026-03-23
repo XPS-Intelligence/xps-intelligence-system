@@ -113,9 +113,9 @@ export function LiveAuthView({
               <Shield className="h-3.5 w-3.5" />
               Secure workspace
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-white">A working login path that still respects the clean host architecture.</h1>
+            <h1 className="text-4xl font-black tracking-tight text-white">The sales command center your team can actually operate every day.</h1>
             <p className="mt-5 max-w-lg text-sm leading-7 text-white/68">
-              Development mode can bootstrap a valid workspace session through the API so the rest of the product can be validated before every external integration is finalized.
+              Sign in to manage leads, run scraping workflows, review recommendations, and operate the system from a single governed workspace.
             </p>
           </div>
         </div>
@@ -135,7 +135,11 @@ export function LiveAuthView({
             <div className="mb-8">
               <p className="text-xs uppercase tracking-[0.26em] text-gold">{auth.subtitle}</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-white">{auth.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-white/65">{auth.subtitle}</p>
+              <p className="mt-3 text-sm leading-6 text-white/65">
+                {pathname === "/login"
+                  ? "Enter your workspace to review leads, pipeline movement, assistant guidance, and system status."
+                  : "Create your workspace profile so the system can tailor territory, role access, and assistant behavior."}
+              </p>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
@@ -176,7 +180,7 @@ export function LiveAuthView({
               <div className="mt-4 text-sm text-white/55">
                 First run?{" "}
                 <Link className="text-gold transition hover:text-gold-light" href="/onboarding">
-                  Create the first admin workspace
+                  Create the first admin account
                 </Link>
               </div>
             ) : null}

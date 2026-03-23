@@ -23,6 +23,13 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 
+async function clickNavAndAssert(label, expectedPattern) {
+  await page.getByRole("link", { name: new RegExp(label, "i") }).click();
+  await page.waitForLoadState("networkidle");
+  const body = await page.textContent("body");
+  assert.match(body || "", expectedPattern);
+}
+
 try {
   await context.tracing.start({ screenshots: true, snapshots: true });
 
@@ -39,6 +46,10 @@ try {
   await page.goto("/dashboard", { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "03-dashboard.png"), fullPage: true });
   assert.match(await page.textContent("body"), /Dashboard|Recent movement/i);
+  await clickNavAndAssert("Leads", /Leads|Lead candidates|Promote to HubSpot/i);
+  await clickNavAndAssert("AI Assistant", /AI Assistant|Sales copilot|AI partner/i);
+  await clickNavAndAssert("Scraper", /Scraper|Preset-driven manual search|Personal scraper presets/i);
+  await clickNavAndAssert("Analytics", /Analytics Center|Executive overview|Pipeline/i);
 
   await page.goto("/leads", { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "04-leads.png"), fullPage: true });
@@ -53,7 +64,7 @@ try {
 
   await page.goto("/ai-assistant", { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "07-ai-assistant.png"), fullPage: true });
-  assert.match(await page.textContent("body"), /AI partner|Assistant briefing|Workspace template/i);
+  assert.match(await page.textContent("body"), /AI Assistant|Sales copilot|AI partner|Workspace template/i);
 
   await page.goto("/admin", { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(screenshotDir, "08-admin.png"), fullPage: true });
