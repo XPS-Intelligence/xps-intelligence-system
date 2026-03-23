@@ -35,6 +35,8 @@ import { AdminControlPlane } from "@/next/AdminControlPlane";
 type RouteCopy = {
   title: string;
   subtitle: string;
+  category?: string;
+  template?: string;
   summary: string;
   notes: readonly string[];
 };
@@ -116,6 +118,12 @@ const routeRoles: Record<string, User["role"][]> = {
   "/manager": ["manager", "owner", "admin"],
   "/owner": ["owner", "admin"],
 };
+
+const scraperPresets = [
+  { name: "Miami epoxy", city: "Miami", state: "FL", industry: "epoxy flooring contractor", keyword: "decorative concrete" },
+  { name: "Tampa resin", city: "Tampa", state: "FL", industry: "resinous floor contractor", keyword: "polished concrete" },
+  { name: "Orlando coatings", city: "Orlando", state: "FL", industry: "industrial coatings", keyword: "concrete polishing" },
+];
 
 function filterSystemNav(role: User["role"] | null) {
   return systemNav.filter((item) => {
@@ -219,6 +227,8 @@ export function LiveWorkspaceView({
   });
 
   const filteredSystemNav = useMemo(() => filterSystemNav(currentUser?.role ?? null), [currentUser?.role]);
+  const workspaceTemplate = route.template ?? "team-member";
+  const workspaceCategory = route.category ?? "core";
 
   const refreshData = useCallback(async () => {
     setLoading(true);
@@ -308,6 +318,16 @@ export function LiveWorkspaceView({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function applyScraperPreset(preset: (typeof scraperPresets)[number]) {
+    setSearchForm((prev) => ({
+      ...prev,
+      city: preset.city,
+      state: preset.state,
+      industry: preset.industry,
+      keyword: preset.keyword,
+    }));
   }
 
   const metrics =
@@ -421,7 +441,7 @@ export function LiveWorkspaceView({
             ) : null}
 
             {pathname !== "/admin" ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_0.75fr_0.5fr]">
               <section className="rounded-[2rem] border border-white/10 bg-card/75 p-6">
                 <div className="text-sm font-semibold text-white">
                   {pathname === "/dashboard" ? "Recent movement" : pathname === "/leads" ? "Lead candidates" : pathname === "/scraper" ? "Scrape controls" : "Workspace notes"}
@@ -636,6 +656,75 @@ export function LiveWorkspaceView({
                   </div>
                 )}
               </section>
+
+              <aside className="space-y-4">
+                <section className="rounded-[2rem] border border-white/10 bg-card/75 p-5">
+                  <div className="text-sm font-semibold text-white">Workspace template</div>
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Template</div>
+                      <div className="mt-2 text-lg font-black text-white">{workspaceTemplate}</div>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Category</div>
+                      <div className="mt-2 text-lg font-black text-white">{workspaceCategory}</div>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-white/40">Role</div>
+                      <div className="mt-2 text-lg font-black text-white">{currentUser?.role ?? "guest"}</div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-[2rem] border border-white/10 bg-card/75 p-5">
+                  <div className="text-sm font-semibold text-white">AI partner</div>
+                  <div className="mt-3 rounded-2xl border border-gold/20 bg-gold/10 p-4">
+                    <div className="text-[11px] uppercase tracking-[0.22em] text-gold-light">Autonomy mode</div>
+                    <div className="mt-2 text-lg font-black text-white">{briefing?.autonomy_mode ?? "hybrid"}</div>
+                    <div className="mt-2 text-sm leading-6 text-white/65">
+                      Same shell, role-tailored tools, and proactive guidance live in this rail once the provider routing and blueprint catalog are fully connected.
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {(briefing?.cards ?? []).slice(0, 2).map((card) => (
+                      <div key={card.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                        <div className="text-sm font-semibold text-white">{card.title}</div>
+                        <div className="mt-2 text-sm leading-6 text-white/60">{card.action}</div>
+                      </div>
+                    ))}
+                    {!briefing?.cards.length ? (
+                      <EmptyState text="Proactive assistant cards appear here as the live assistant rail fills out." />
+                    ) : null}
+                  </div>
+                </section>
+
+                {pathname === "/scraper" ? (
+                  <section className="rounded-[2rem] border border-white/10 bg-card/75 p-5">
+                    <div className="text-sm font-semibold text-white">Personal scraper presets</div>
+                    <div className="mt-3 space-y-3">
+                      {scraperPresets.map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => applyScraperPreset(preset)}
+                          className="block w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-left transition hover:border-gold/30"
+                        >
+                          <div className="text-sm font-semibold text-white">{preset.name}</div>
+                          <div className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">
+                            {preset.city}, {preset.state}
+                          </div>
+                          <div className="mt-2 text-sm leading-6 text-white/60">
+                            {preset.industry} · {preset.keyword}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/60">
+                      Next step: bind this panel to per-user scraper profiles, Playwright browser search, and admin-managed source permissions.
+                    </div>
+                  </section>
+                ) : null}
+              </aside>
             </div>
             ) : null}
           </main>
