@@ -19,7 +19,7 @@ const envSchema = z
     HUBSPOT_PIPELINE_STAGE: z.string().default("qualifiedtobuy"),
     OLLAMA_BASE_URL: z.string().default("http://127.0.0.1:11434"),
     OLLAMA_MODEL: z.string().default("qwen2.5:latest"),
-    OLLAMA_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
+    OLLAMA_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
     GROQ_API_KEY: z.string().optional(),
     GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
     JWT_SECRET: z.string().optional(),
@@ -52,6 +52,10 @@ if (!parsed.success) {
   throw new Error(`Invalid environment configuration:\n${details}`);
 }
 
+function normalizeLocalOllamaBaseUrl(value: string): string {
+  return value.replace("http://localhost:", "http://127.0.0.1:");
+}
+
 export const env = {
   ...parsed.data,
   PORT: parsed.data.API_PORT ?? parsed.data.PORT,
@@ -60,6 +64,7 @@ export const env = {
   SUPABASE_URL: parsed.data.SUPABASE_URL ?? "",
   SUPABASE_SERVICE_ROLE_KEY: parsed.data.SUPABASE_SERVICE_ROLE_KEY ?? "",
   HUBSPOT_ACCESS_TOKEN: parsed.data.HUBSPOT_ACCESS_TOKEN ?? "",
+  OLLAMA_BASE_URL: normalizeLocalOllamaBaseUrl(parsed.data.OLLAMA_BASE_URL),
   GROQ_API_KEY: parsed.data.GROQ_API_KEY ?? "",
   JWT_SECRET: parsed.data.JWT_SECRET ?? "dev-only-change-me",
 };
