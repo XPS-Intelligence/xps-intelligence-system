@@ -20,6 +20,7 @@
 - `pnpm build`
 - `pnpm test:e2e`
 - `pnpm benchmark:e2e`
+- `pnpm test:chaos`
 - `pnpm smoke:postdeploy`
 - `pnpm validate:headful`
 

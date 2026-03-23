@@ -21,7 +21,7 @@ jobs:
           cache: pnpm
 
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
         run: pnpm typecheck
@@ -39,11 +39,10 @@ jobs:
         run: pnpm playwright:install
 
       - name: E2E
-        env:
-          XPS_SKIP_STACK_BUILD: "1"
         run: pnpm test:e2e
 
       - name: Benchmark
-        env:
-          XPS_SKIP_STACK_BUILD: "1"
         run: pnpm benchmark:e2e
+
+      - name: Chaos
+        run: pnpm test:chaos
