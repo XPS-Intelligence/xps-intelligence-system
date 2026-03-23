@@ -17,6 +17,11 @@ const envSchema = z
     HUBSPOT_ACCESS_TOKEN: z.string().optional(),
     HUBSPOT_LIFECYCLE_STAGE: z.string().default("opportunity"),
     HUBSPOT_PIPELINE_STAGE: z.string().default("qualifiedtobuy"),
+    OLLAMA_BASE_URL: z.string().default("http://127.0.0.1:11434"),
+    OLLAMA_MODEL: z.string().default("qwen2.5:latest"),
+    OLLAMA_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
+    GROQ_API_KEY: z.string().optional(),
+    GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
     JWT_SECRET: z.string().optional(),
     AUTH_TOKEN_TTL: z.string().default("8h"),
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
@@ -55,6 +60,7 @@ export const env = {
   SUPABASE_URL: parsed.data.SUPABASE_URL ?? "",
   SUPABASE_SERVICE_ROLE_KEY: parsed.data.SUPABASE_SERVICE_ROLE_KEY ?? "",
   HUBSPOT_ACCESS_TOKEN: parsed.data.HUBSPOT_ACCESS_TOKEN ?? "",
+  GROQ_API_KEY: parsed.data.GROQ_API_KEY ?? "",
   JWT_SECRET: parsed.data.JWT_SECRET ?? "dev-only-change-me",
 };
 

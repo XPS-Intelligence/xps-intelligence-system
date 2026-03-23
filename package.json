@@ -16,6 +16,7 @@
     "docker:logs": "docker compose -f infra/docker/compose.local.yml logs --tail=200",
     "db:apply-railway-schema": "node scripts/ops/apply-railway-schema.mjs",
     "playwright:install": "pnpm exec playwright install --with-deps chromium",
+    "enrich:candidates": "node scripts/enrich-candidates-batch.mjs",
     "scrape:seed-batch": "node scripts/seed-search-batch.mjs",
     "test:e2e": "node tests/scripts/run-e2e.mjs",
     "benchmark:e2e": "node tests/scripts/run-benchmark.mjs",

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "../lib/db.js";
 import { env } from "../lib/env.js";
 import { syncCandidateToHubSpot } from "../lib/hubspot.js";
+import { generateLeadIntelligence } from "../lib/lead-intelligence.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 
 export const leadCandidatesRouter = Router();
@@ -18,6 +19,62 @@ const promoteSchema = z.object({
   lifecycle_stage: z.string().optional(),
   pipeline_stage: z.string().optional(),
 });
+
+async function loadCandidateDetail(id: string) {
+  const db = getDb();
+  const result = await db.query<{
+    id: string;
+    company_name: string;
+    vertical: string | null;
+    territory: string | null;
+    candidate_status: string;
+    score: string | null;
+    company_metadata: Record<string, unknown> | null;
+    contact_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    recommendation_type: string | null;
+    recommendation_payload: Record<string, unknown> | null;
+    explanation: string | null;
+  }>(
+    `SELECT
+       lc.id,
+       cc.display_name AS company_name,
+       cc.vertical,
+       lc.territory,
+       lc.candidate_status,
+       score.total_score::text AS score,
+       cc.metadata AS company_metadata,
+       contact.full_name AS contact_name,
+       contact.email AS contact_email,
+       contact.phone AS contact_phone,
+       recommendation.recommendation_type,
+       recommendation.recommendation_payload,
+       recommendation.explanation
+     FROM lead_candidates lc
+     JOIN canonical_companies cc ON cc.id = lc.company_id
+     LEFT JOIN canonical_contacts contact ON contact.id = lc.primary_contact_id
+     LEFT JOIN LATERAL (
+       SELECT total_score
+       FROM lead_scores
+       WHERE lead_candidate_id = lc.id
+       ORDER BY scored_at DESC, created_at DESC
+       LIMIT 1
+     ) score ON TRUE
+     LEFT JOIN LATERAL (
+       SELECT recommendation_type, recommendation_payload, explanation
+       FROM recommendations
+       WHERE lead_candidate_id = lc.id
+       ORDER BY recommendation_rank ASC, created_at DESC
+       LIMIT 1
+     ) recommendation ON TRUE
+     WHERE lc.id = $1
+     LIMIT 1`,
+    [id]
+  );
+
+  return result.rows[0] ?? null;
+}
 
 leadCandidatesRouter.get("/", requireAuth, async (req, res) => {
   try {
@@ -115,59 +172,7 @@ leadCandidatesRouter.get("/", requireAuth, async (req, res) => {
 
 leadCandidatesRouter.get("/:id", requireAuth, async (req, res) => {
   try {
-    const db = getDb();
-    const result = await db.query<{
-      id: string;
-      company_name: string;
-      vertical: string | null;
-      territory: string | null;
-      candidate_status: string;
-      score: string | null;
-      company_metadata: Record<string, unknown> | null;
-      contact_name: string | null;
-      contact_email: string | null;
-      contact_phone: string | null;
-      recommendation_type: string | null;
-      recommendation_payload: Record<string, unknown> | null;
-      explanation: string | null;
-    }>(
-      `SELECT
-         lc.id,
-         cc.display_name AS company_name,
-         cc.vertical,
-         lc.territory,
-         lc.candidate_status,
-         score.total_score::text AS score,
-         cc.metadata AS company_metadata,
-         contact.full_name AS contact_name,
-         contact.email AS contact_email,
-         contact.phone AS contact_phone,
-         recommendation.recommendation_type,
-         recommendation.recommendation_payload,
-         recommendation.explanation
-       FROM lead_candidates lc
-       JOIN canonical_companies cc ON cc.id = lc.company_id
-       LEFT JOIN canonical_contacts contact ON contact.id = lc.primary_contact_id
-       LEFT JOIN LATERAL (
-         SELECT total_score
-         FROM lead_scores
-         WHERE lead_candidate_id = lc.id
-         ORDER BY scored_at DESC, created_at DESC
-         LIMIT 1
-       ) score ON TRUE
-       LEFT JOIN LATERAL (
-         SELECT recommendation_type, recommendation_payload, explanation
-         FROM recommendations
-         WHERE lead_candidate_id = lc.id
-         ORDER BY recommendation_rank ASC, created_at DESC
-         LIMIT 1
-       ) recommendation ON TRUE
-       WHERE lc.id = $1
-       LIMIT 1`,
-      [req.params.id]
-    );
-
-    const row = result.rows[0];
+    const row = await loadCandidateDetail(req.params.id);
     if (!row) {
       return res.status(404).json({ error: "Lead candidate not found" });
     }
@@ -192,6 +197,70 @@ leadCandidatesRouter.get("/:id", requireAuth, async (req, res) => {
             explanation: row.explanation,
           }
         : null,
+      contact_links: {
+        email: row.contact_email ? `mailto:${row.contact_email}` : null,
+        phone: row.contact_phone ? `tel:${row.contact_phone}` : null,
+        sms: row.contact_phone ? `sms:${row.contact_phone}` : null,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+leadCandidatesRouter.get("/:id/intelligence", requireAuth, async (req, res) => {
+  try {
+    const row = await loadCandidateDetail(req.params.id);
+    if (!row) {
+      return res.status(404).json({ error: "Lead candidate not found" });
+    }
+
+    const intelligence = await generateLeadIntelligence({
+      company_name: row.company_name,
+      vertical: row.vertical ?? "unclassified",
+      territory: row.territory,
+      candidate_status: row.candidate_status,
+      score: Number(row.score ?? 0),
+      company_metadata: row.company_metadata ?? {},
+      primary_contact: {
+        name: row.contact_name,
+        email: row.contact_email,
+        phone: row.contact_phone,
+      },
+      top_recommendation: row.recommendation_type
+        ? {
+            type: row.recommendation_type,
+            payload: row.recommendation_payload ?? {},
+            explanation: row.explanation,
+          }
+        : null,
+    });
+
+    return res.json({
+      id: row.id,
+      company_name: row.company_name,
+      score: Number(row.score ?? 0),
+      territory: row.territory,
+      vertical: row.vertical ?? "unclassified",
+      candidate_status: row.candidate_status,
+      primary_contact: {
+        name: row.contact_name,
+        email: row.contact_email,
+        phone: row.contact_phone,
+        links: {
+          email: row.contact_email ? `mailto:${row.contact_email}` : null,
+          phone: row.contact_phone ? `tel:${row.contact_phone}` : null,
+          sms: row.contact_phone ? `sms:${row.contact_phone}` : null,
+        },
+      },
+      top_recommendation: row.recommendation_type
+        ? {
+            type: row.recommendation_type,
+            payload: row.recommendation_payload ?? {},
+            explanation: row.explanation,
+          }
+        : null,
+      intelligence,
     });
   } catch (error) {
     return res.status(500).json({ error: (error as Error).message });
