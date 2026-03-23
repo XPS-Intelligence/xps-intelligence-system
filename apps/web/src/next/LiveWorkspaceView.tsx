@@ -434,15 +434,11 @@ export function LiveWorkspaceView({
               </div>
             </section>
 
-            {pathname === "/admin" ? (
-              <div className="mt-6">
-                <AdminControlPlane />
-              </div>
-            ) : null}
-
-            {pathname !== "/admin" ? (
             <div className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_0.75fr_0.5fr]">
-              <section className="rounded-[2rem] border border-white/10 bg-card/75 p-6">
+              <section className={pathname === "/admin" ? "" : "rounded-[2rem] border border-white/10 bg-card/75 p-6"}>
+                {pathname === "/admin" ? <AdminControlPlane /> : null}
+                {pathname !== "/admin" ? (
+                <>
                 <div className="text-sm font-semibold text-white">
                   {pathname === "/dashboard" ? "Recent movement" : pathname === "/leads" ? "Lead candidates" : pathname === "/scraper" ? "Scrape controls" : "Workspace notes"}
                 </div>
@@ -587,6 +583,8 @@ export function LiveWorkspaceView({
                     ))}
                   </div>
                 ) : null}
+                </>
+                ) : null}
               </section>
 
               <section className="rounded-[2rem] border border-white/10 bg-card/75 p-6">
@@ -637,6 +635,11 @@ export function LiveWorkspaceView({
                   </div>
                 ) : (
                   <div className="mt-4 space-y-3">
+                    {pathname === "/admin" ? (
+                      <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/70">
+                        Admin quick actions are moving into the always-on operator rail so the control plane stays consistent with every other workspace.
+                      </div>
+                    ) : null}
                     <Link href="/dashboard" className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/80 transition hover:border-gold/40">
                       Return to dashboard
                       <ArrowRight className="h-4 w-4 text-white/40" />
@@ -726,7 +729,6 @@ export function LiveWorkspaceView({
                 ) : null}
               </aside>
             </div>
-            ) : null}
           </main>
         </div>
       </div>
