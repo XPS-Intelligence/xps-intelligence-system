@@ -4,6 +4,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
   DATABASE_URL: z.string().min(1),
+  DATABASE_SSL_MODE: z.enum(["disable", "require"]).default("disable"),
   WORKER_NAME: z.string().min(1).default("xps-worker"),
   WORKER_QUEUE_KEY: z.string().min(1).default("xps:scrape:queue"),
   WORKER_HEARTBEAT_KEY: z.string().min(1).default("xps:worker:heartbeat"),

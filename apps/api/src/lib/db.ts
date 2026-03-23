@@ -14,7 +14,7 @@ export function getDb(): pg.Pool {
   if (!pool) {
     pool = new Pool({
       connectionString: env.DATABASE_URL,
-      ssl: env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+      ssl: env.DATABASE_SSL_MODE === "require" ? { rejectUnauthorized: false } : false,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,

@@ -20,6 +20,7 @@ const sharedEnv = {
 };
 
 const children = [];
+let dockerStarted = false;
 
 function spawnCommand(command, extraEnv = {}) {
   const child = spawn(command, {
@@ -81,19 +82,6 @@ async function waitForHttp(url, timeoutMs = 180_000) {
 }
 
 async function main() {
-  if (process.env.XPS_SKIP_STACK_BUILD !== "1") {
-    const build = spawnCommand("pnpm build");
-    await new Promise((resolve, reject) => {
-      build.once("exit", (code) => {
-        if (code === 0) {
-          resolve(null);
-        } else {
-          reject(new Error(`pnpm build failed with exit code ${code}`));
-        }
-      });
-    });
-  }
-
   const dockerUp = spawnCommand("pnpm docker:up");
   await new Promise((resolve, reject) => {
     dockerUp.once("exit", (code) => {
@@ -104,17 +92,16 @@ async function main() {
       }
     });
   });
+  dockerStarted = true;
 
   await waitForTcp("127.0.0.1", 55433);
   await waitForTcp("127.0.0.1", 56380);
-
-  spawnCommand("pnpm --filter api start");
   await waitForHttp("http://127.0.0.1:4000/api/health");
-
-  spawnCommand("pnpm --filter worker start");
-  spawnCommand("pnpm --filter web start");
   await waitForHttp("http://127.0.0.1:3000");
 
+  setInterval(() => {
+    // Keep the process alive until the parent test harness shuts the stack down.
+  }, 60_000);
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 }
@@ -134,6 +121,13 @@ async function shutdown() {
         })
     )
   );
+
+  if (dockerStarted) {
+    const dockerDown = spawnCommand("pnpm docker:down");
+    await new Promise((resolve) => {
+      dockerDown.once("exit", () => resolve(null));
+    });
+  }
 
   process.exit(0);
 }
