@@ -8,6 +8,7 @@ export async function signIn(page, overrides = {}) {
     email: "playwright@xps.local",
     password: "changeme123",
     fullName: "Playwright Operator",
+    role: "employee",
     ...overrides,
   };
 
@@ -28,6 +29,7 @@ export async function signIn(page, overrides = {}) {
         email: user.email,
         password: user.password,
         full_name: user.fullName,
+        role: user.role,
       },
     });
 

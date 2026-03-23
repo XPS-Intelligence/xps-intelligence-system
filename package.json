@@ -17,6 +17,7 @@
     "playwright:install": "npx -y -p playwright playwright install --with-deps chromium",
     "test:e2e": "npx -y -p playwright node tests/scripts/run-e2e.mjs",
     "benchmark:e2e": "npx -y -p playwright node tests/scripts/run-benchmark.mjs",
+    "validate:headful": "npx -y -p playwright node tests/scripts/run-headed-validation.mjs",
     "smoke:postdeploy": "npx -y -p playwright node tests/scripts/run-smoke.mjs",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
