@@ -2,12 +2,16 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/web/Dockerfile",
+    "dockerfilePath": "Dockerfile",
     "watchPatterns": [
-      "apps/web/**",
+      "src/**",
+      "public/**",
       "package.json",
-      "pnpm-lock.yaml",
-      "tsconfig.base.json"
+      "tsconfig.json",
+      "next.config.mjs",
+      "tailwind.config.ts",
+      "postcss.config.mjs",
+      "Dockerfile"
     ]
   },
   "deploy": {

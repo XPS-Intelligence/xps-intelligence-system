@@ -1,27 +1,22 @@
-FROM node:20-bookworm-slim AS base
-RUN npm install -g pnpm@10.6.1
+FROM node:20-bookworm-slim AS deps
 WORKDIR /app
+COPY package.json ./
+RUN npm install --include=dev --legacy-peer-deps
 
-FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/api/package.json apps/api/package.json
-RUN pnpm install --frozen-lockfile --filter api...
+FROM deps AS build
+COPY tsconfig.json tsconfig.build.json ./
+COPY src ./src
+RUN npm run build
 
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY apps/api ./apps/api
-RUN pnpm --filter api build
-
-FROM base AS runtime
+FROM node:20-bookworm-slim AS runtime
+WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=4000
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/api/package.json apps/api/package.json
-RUN pnpm install --prod --frozen-lockfile --filter api...
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-WORKDIR /app/apps/api
+COPY package.json ./
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+COPY db ./db
+COPY scripts ./scripts
+COPY --from=build /app/dist ./dist
 EXPOSE 4000
-CMD ["pnpm", "start"]
+CMD ["sh", "-c", "npm run db:apply-schema && npm run start"]

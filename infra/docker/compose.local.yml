@@ -49,8 +49,8 @@ services:
 
   api:
     build:
-      context: ../..
-      dockerfile: apps/api/Dockerfile
+      context: ../../apps/api
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
       - ../../.env
@@ -80,8 +80,8 @@ services:
 
   worker:
     build:
-      context: ../..
-      dockerfile: apps/worker/Dockerfile
+      context: ../../apps/worker
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
       - ../../.env
@@ -100,8 +100,8 @@ services:
 
   web:
     build:
-      context: ../..
-      dockerfile: apps/web/Dockerfile
+      context: ../../apps/web
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: /api
         NEXT_PUBLIC_SITE_URL: http://localhost:3000
