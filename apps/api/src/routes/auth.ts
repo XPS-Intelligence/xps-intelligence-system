@@ -1,7 +1,9 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import { z } from "zod";
 import { requireAuth, signAuthToken, type AuthUser } from "../middleware/auth.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
+import { getSupabase } from "../lib/supabase.js";
 import { countUsers, createUser, findUserByEmail, findUserById, recordUserLogin, toAuthUser } from "../lib/users.js";
 
 export const authRouter = Router();
@@ -20,6 +22,22 @@ const registerSchema = z.object({
   territory: z.string().min(1).optional(),
   autonomy_mode: z.enum(["minimal", "hybrid", "full"]).default("hybrid"),
 });
+
+const supabaseSessionSchema = z.object({
+  access_token: z.string().min(1),
+});
+
+function resolveSupabaseRole(
+  metadata: Record<string, unknown> | null | undefined,
+  fallbackAdmin: boolean
+): AuthUser["role"] {
+  const rawRole = typeof metadata?.role === "string" ? metadata.role : null;
+  if (rawRole === "employee" || rawRole === "manager" || rawRole === "owner" || rawRole === "admin") {
+    return rawRole;
+  }
+
+  return fallbackAdmin ? "admin" : "employee";
+}
 
 authRouter.post("/login", async (req, res) => {
   try {
@@ -83,6 +101,53 @@ authRouter.post("/register", async (req, res) => {
       token: signAuthToken(user),
       user,
       profile_status: existingUsers === 0 ? "bootstrap-admin" : "created",
+    });
+  } catch (error) {
+    return res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+authRouter.post("/supabase/session", async (req, res) => {
+  try {
+    const parsed = supabaseSessionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Supabase access token required" });
+    }
+
+    const supabase = getSupabase();
+    const { data, error } = await supabase.auth.getUser(parsed.data.access_token);
+    if (error || !data.user?.email) {
+      return res.status(401).json({ error: "Invalid Supabase session" });
+    }
+
+    let userRecord = await findUserByEmail(data.user.email);
+    if (!userRecord) {
+      const existingUsers = await countUsers();
+      const passwordHash = await hashPassword(crypto.randomUUID());
+      userRecord = await createUser({
+        id: data.user.id,
+        email: data.user.email,
+        passwordHash,
+        fullName:
+          typeof data.user.user_metadata?.full_name === "string" && data.user.user_metadata.full_name.trim().length > 0
+            ? data.user.user_metadata.full_name
+            : data.user.email.split("@")[0],
+        role: resolveSupabaseRole(
+          (data.user.app_metadata as Record<string, unknown> | undefined) ?? undefined,
+          existingUsers === 0
+        ),
+        autonomyMode: "hybrid",
+      });
+    }
+
+    await recordUserLogin(userRecord.id);
+    const user = toAuthUser(userRecord);
+
+    return res.json({
+      token: signAuthToken(user),
+      user,
+      profile_status: "supabase-session",
+      supabase_user_id: data.user.id,
     });
   } catch (error) {
     return res.status(500).json({ error: (error as Error).message });

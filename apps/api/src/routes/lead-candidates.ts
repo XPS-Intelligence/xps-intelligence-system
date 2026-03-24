@@ -215,13 +215,43 @@ leadCandidatesRouter.get("/:id/intelligence", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Lead candidate not found" });
     }
 
+    const companyMetadata = row.company_metadata ?? {};
+    const primaryDomain =
+      (typeof companyMetadata.primary_domain === "string" && companyMetadata.primary_domain) ||
+      (typeof companyMetadata.domain === "string" && companyMetadata.domain) ||
+      (typeof companyMetadata.website === "string" && companyMetadata.website) ||
+      null;
+    const contactCount = row.contact_name || row.contact_email || row.contact_phone ? 1 : 0;
+    const contactsWithEmail = row.contact_email ? 1 : 0;
+    const contactsWithPhone = row.contact_phone ? 1 : 0;
+    const contactsWithLinkedIn = 0;
+    const coverageRatio = Math.round(
+      ((contactsWithEmail + contactsWithPhone + contactsWithLinkedIn) / 3) * 100
+    );
+    const coverageGaps = [
+      ...(contactsWithEmail > 0 ? [] : ["email coverage"]),
+      ...(contactsWithPhone > 0 ? [] : ["phone coverage"]),
+      ...(row.contact_name ? [] : ["named contact"]),
+    ];
+
     const intelligence = await generateLeadIntelligence({
       company_name: row.company_name,
       vertical: row.vertical ?? "unclassified",
       territory: row.territory,
       candidate_status: row.candidate_status,
       score: Number(row.score ?? 0),
-      company_metadata: row.company_metadata ?? {},
+      primary_domain: primaryDomain,
+      primary_phone: row.contact_phone,
+      company_metadata: companyMetadata,
+      contact_coverage: {
+        contact_count: contactCount,
+        contacts_with_email: contactsWithEmail,
+        contacts_with_phone: contactsWithPhone,
+        contacts_with_linkedin: contactsWithLinkedIn,
+        primary_contact_ready: Boolean(row.contact_email || row.contact_phone),
+        coverage_ratio: coverageRatio,
+        gaps: coverageGaps,
+      },
       primary_contact: {
         name: row.contact_name,
         email: row.contact_email,

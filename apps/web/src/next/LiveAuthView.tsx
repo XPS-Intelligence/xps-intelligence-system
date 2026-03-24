@@ -10,6 +10,7 @@ import heroBg from "@/assets/hero-bg.jpg";
 import xpsLogo from "@/assets/xps-logo.png";
 import { setSessionCookies } from "@/lib/cookies";
 import { webEnv } from "@/lib/env";
+import { supabase } from "@/integrations/supabase/client";
 
 type AuthRoute = {
   title: string;
@@ -65,21 +66,53 @@ export function LiveAuthView({
     setError(null);
 
     try {
-      const endpoint = pathname === "/onboarding" ? "/auth/register" : "/auth/login";
-      const payload =
-        pathname === "/onboarding"
-          ? { email, password, full_name: fullName, role, job_title: jobTitle, territory, autonomy_mode: "hybrid" }
-          : { email, password };
+      let accessToken: string | null = null;
 
-      const response = await fetch(`${webEnv.apiUrl}${endpoint}`, {
+      if (pathname === "/onboarding") {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              role,
+              job_title: jobTitle,
+              territory,
+            },
+            emailRedirectTo: webEnv.apiUrl.startsWith("http") ? undefined : window.location.origin,
+          },
+        });
+
+        if (signUpError) {
+          throw signUpError;
+        }
+
+        accessToken = data.session?.access_token ?? null;
+        if (!accessToken) {
+          throw new Error("Supabase account created. If email confirmation is enabled, confirm the account first, then sign in.");
+        }
+      } else {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          throw signInError;
+        }
+
+        accessToken = data.session.access_token;
+      }
+
+      const response = await fetch(`${webEnv.apiUrl}/auth/supabase/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ access_token: accessToken }),
       });
       const data = (await response.json()) as { token?: string; user?: unknown; error?: string };
 
       if (!response.ok || !data.token) {
-        throw new Error(data.error || "Unable to start a workspace session");
+        throw new Error(data.error || "Unable to start an XPS workspace session");
       }
 
       localStorage.setItem("xps_token", data.token);

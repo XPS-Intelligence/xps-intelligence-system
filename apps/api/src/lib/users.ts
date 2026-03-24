@@ -20,6 +20,7 @@ export type AppUserRow = QueryResultRow & {
 };
 
 type CreateUserInput = {
+  id?: string;
   email: string;
   passwordHash: string;
   fullName: string;
@@ -134,6 +135,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserRow> {
   const organizationId = await ensureDefaultOrganization();
   const inserted = await db.query<AppUserRow>(
     `INSERT INTO app_users (
+       id,
        email,
        password_hash,
        full_name,
@@ -147,7 +149,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserRow> {
        settings,
        assistant_profile
      )
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+     VALUES (COALESCE($1::uuid, uuid_generate_v4()),$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
      RETURNING
        id,
        email,
@@ -164,6 +166,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserRow> {
        assistant_profile,
        last_login_at::text`,
     [
+      input.id ?? undefined,
       input.email.trim().toLowerCase(),
       input.passwordHash,
       input.fullName,
